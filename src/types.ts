@@ -1,0 +1,23 @@
+export type CharacterClipboardData = {
+  kind: 'character';
+  data: Partial<Character>;
+};
+
+export type Character = {
+  name: string;
+  memo: string;
+  initiative: number;
+  status: {
+    label: string;
+    value: number;
+    max: number;
+  }[]; // 수정되는 파라메터: 체력, MP 등
+  params: { label: string; value: string }[]; // 변동되지 않는 파라메터: 근력 등
+  commands: string; // 채팅 팔레트, \n으로 구분
+  permittedUserIds: string[]; // 이 캐릭터를 다룰 수 있는 디스코드 유저 ID 목록
+};
+
+export type CharacterRecord = {
+  messageId: string;
+  data: Character;
+};
