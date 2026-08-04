@@ -3,8 +3,9 @@ import { config } from "./config.js";
 import { characterCommand } from "./commands/character.js";
 import { paletteCommand } from "./commands/palette.js";
 import { sayCommand } from "./commands/say.js";
+import { statCommand } from "./commands/stat.js";
 
-const commands = [characterCommand.toJSON(), paletteCommand.toJSON(), sayCommand.toJSON()];
+const commands = [characterCommand.toJSON(), paletteCommand.toJSON(), sayCommand.toJSON(), statCommand.toJSON()];
 const rest = new REST().setToken(config.token);
 
 (async () => {

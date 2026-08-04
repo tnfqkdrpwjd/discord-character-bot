@@ -14,7 +14,7 @@ import { deleteCharacter } from "../store/channelStore.js";
 export const characterCommand = new SlashCommandBuilder()
   .setName("캐릭터")
   .setDescription("캐릭터 데이터 관리")
-  .addSubcommand((sub) => sub.setName("등록").setDescription("JSON을 붙여넣고 이미지를 첨부해서 캐릭터를 등록/수정합니다"))
+  .addSubcommand((sub) => sub.setName("등록").setDescription("JSON을 붙여넣거나 첨부해서 캐릭터를 등록/수정합니다"))
   .addSubcommand((sub) => sub.setName("목록").setDescription("등록된 캐릭터 목록을 봅니다"))
   .addSubcommand((sub) =>
     sub
@@ -34,37 +34,49 @@ export async function handleCharacterCommand(interaction: ChatInputCommandIntera
   if (sub === "등록") {
     const modal = new ModalBuilder().setCustomId("character_modal").setTitle("캐릭터 등록");
 
+    // 1) 짧은 JSON은 직접 붙여넣기 (4000자 제한)
     const jsonInput = new TextInputBuilder()
       .setCustomId("json_input")
       .setStyle(TextInputStyle.Paragraph)
-      .setPlaceholder('{ "kind": "character", "data": {...} } 형식으로 붙여넣으세요')
+      .setPlaceholder("4000자 이하면 여기에 붙여넣으세요 (길면 아래 파일 첨부 사용, 이 칸은 비워도 됨)")
       .setMaxLength(4000)
-      .setRequired(true);
+      .setRequired(false);
+    const jsonLabel = new LabelBuilder().setLabel("캐릭터 JSON (직접 입력)").setTextInputComponent(jsonInput);
 
-    const jsonLabel = new LabelBuilder().setLabel("캐릭터 JSON").setTextInputComponent(jsonInput);
+    // 2) 긴 JSON은 .json 파일로 첨부 (텍스트 길이 제한 없음, 있으면 이게 우선 적용됨)
+    const jsonFileUpload = new FileUploadBuilder()
+      .setCustomId("json_file_input")
+      .setMinValues(0)
+      .setMaxValues(1)
+      .setRequired(false);
+    const jsonFileLabel = new LabelBuilder()
+      .setLabel("캐릭터 JSON 파일")
+      .setDescription("텍스트가 4000자를 넘으면 .json 파일로 첨부하세요 (있으면 위 텍스트보다 우선)")
+      .setFileUploadComponent(jsonFileUpload);
 
+    // 3) 프로필 이미지 (선택)
     const imageUpload = new FileUploadBuilder()
       .setCustomId("image_input")
       .setMinValues(0)
       .setMaxValues(1)
       .setRequired(false);
-
     const imageLabel = new LabelBuilder()
       .setLabel("프로필 이미지")
-      .setDescription("캐릭터 프로필로 쓸 이미지 (선택)")
+      .setDescription("캐릭터 프로필로 쓸 이미지 (선택, 비우면 기존 이미지 유지)")
       .setFileUploadComponent(imageUpload);
 
-    modal.addLabelComponents(jsonLabel, imageLabel);
+    modal.addLabelComponents(jsonLabel, jsonFileLabel, imageLabel);
 
-    // 모달을 띄우는 응답은 인터랙션의 첫 응답이어야 하며 defer 할 수 없습니다.
     await interaction.showModal(modal);
     return;
   }
 
   if (sub === "목록") {
-    const list = getAllCharacters(interaction.guild.id);
+    const list = getAllCharacters(interaction.guild.id).filter((c) =>
+      c.data.permittedUserIds.includes(interaction.user.id)
+    );
     if (list.length === 0) {
-      await interaction.reply({ content: "이 서버에 등록된 캐릭터가 없습니다.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: "권한을 가진 캐릭터가 없습니다.", flags: MessageFlags.Ephemeral });
       return;
     }
     const lines = list.map((c) => `- ${c.data.name}`).join("\n");

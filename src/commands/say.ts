@@ -7,6 +7,7 @@ import {
 } from "discord.js";
 import { findByName } from "../store/cache.js";
 import { getCurrentAvatarUrl } from "../store/channelStore.js";
+import { resolvePlaceholders } from "../store/placeholders.js";
 import { getChannelWebhook } from "../webhook/webhookManager.js";
 import { respondWithCharacterNames } from "./autocomplete.js";
 
@@ -43,7 +44,7 @@ export async function handleSayCommand(interaction: ChatInputCommandInteraction)
     return;
   }
 
-  const content = interaction.options.getString("내용", true);
+  const content = resolvePlaceholders(record, interaction.options.getString("내용", true));
   const channel = interaction.channel as TextChannel;
 
   const avatarURL = await getCurrentAvatarUrl(interaction.guild, record);

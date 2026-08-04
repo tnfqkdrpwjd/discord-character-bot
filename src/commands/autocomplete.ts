@@ -1,7 +1,7 @@
 import type { AutocompleteInteraction } from "discord.js";
 import { getAllCharacters } from "../store/cache.js";
 
-/** 여러 커맨드에서 공통으로 쓰는 "캐릭터 이름" 자동완성 */
+/** 여러 커맨드에서 공통으로 쓰는 "캐릭터 이름" 자동완성. 본인이 권한을 가진 캐릭터만 보여줍니다. */
 export async function respondWithCharacterNames(interaction: AutocompleteInteraction, query: string) {
   if (!interaction.guild) {
     await interaction.respond([]);
@@ -9,6 +9,7 @@ export async function respondWithCharacterNames(interaction: AutocompleteInterac
   }
   const q = query.toLowerCase();
   const choices = getAllCharacters(interaction.guild.id)
+    .filter((c) => c.data.permittedUserIds.includes(interaction.user.id))
     .map((c) => c.data.name)
     .filter((n) => n.toLowerCase().includes(q))
     .slice(0, 25);

@@ -7,6 +7,7 @@ import {
 } from "discord.js";
 import { findByName } from "../store/cache.js";
 import { getCurrentAvatarUrl } from "../store/channelStore.js";
+import { resolvePlaceholders } from "../store/placeholders.js";
 import { getChannelWebhook } from "../webhook/webhookManager.js";
 import { respondWithCharacterNames } from "./autocomplete.js";
 
@@ -93,11 +94,12 @@ export async function handlePaletteCommand(interaction: ChatInputCommandInteract
   // 자동완성으로 골랐다면 인덱스(숫자 문자열)가, 직접 타이핑해서 보냈다면 그 텍스트가 들어옴
   const index = Number(raw);
   const line = Number.isInteger(index) && lines[index] !== undefined ? lines[index] : raw;
+  const resolvedLine = resolvePlaceholders(record, line);
 
   const channel = interaction.channel as TextChannel;
   const avatarURL = await getCurrentAvatarUrl(interaction.guild, record);
   const webhook = await getChannelWebhook(channel, interaction.client.user!.id);
 
-  await webhook.send({ content: line, username: record.data.name, avatarURL });
+  await webhook.send({ content: resolvedLine, username: record.data.name, avatarURL });
   await interaction.reply({ content: "전송했습니다.", flags: MessageFlags.Ephemeral });
 }

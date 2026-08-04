@@ -1,11 +1,10 @@
 export type CharacterClipboardData = {
-  kind: 'character';
+  kind: "character";
   data: Partial<Character>;
 };
 
 export type Character = {
   name: string;
-  memo: string;
   initiative: number;
   status: {
     label: string;
@@ -16,6 +15,7 @@ export type Character = {
   commands: string; // 채팅 팔레트, \n으로 구분
   permittedUserIds: string[]; // 이 캐릭터를 다룰 수 있는 디스코드 유저 ID 목록
 };
+// 프로필 이미지는 JSON 필드가 아니라, 데이터 메시지에 첨부파일(avatar.*)로 별도 저장됩니다.
 
 export type CharacterRecord = {
   messageId: string;

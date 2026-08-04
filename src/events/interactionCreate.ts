@@ -3,6 +3,7 @@ import { Events, MessageFlags } from "discord.js";
 import { handleCharacterCommand } from "../commands/character.js";
 import { handlePaletteCommand, handlePaletteAutocomplete } from "../commands/palette.js";
 import { handleSayCommand, handleSayAutocomplete } from "../commands/say.js";
+import { handleStatCommand, handleStatAutocomplete } from "../commands/stat.js";
 import { handleCharacterModal } from "../interactions/modals.js";
 import { handlePermissionSelect } from "../interactions/selects.js";
 
@@ -14,6 +15,8 @@ export function registerInteractionEvent(client: Client) {
           await handlePaletteAutocomplete(interaction);
         } else if (interaction.commandName === "대사") {
           await handleSayAutocomplete(interaction);
+        } else if (interaction.commandName === "스탯") {
+          await handleStatAutocomplete(interaction);
         }
         return;
       }
@@ -25,11 +28,13 @@ export function registerInteractionEvent(client: Client) {
           await handlePaletteCommand(interaction);
         } else if (interaction.commandName === "대사") {
           await handleSayCommand(interaction);
+        } else if (interaction.commandName === "스탯") {
+          await handleStatCommand(interaction);
         }
         return;
       }
 
-      if (interaction.isModalSubmit() && interaction.customId === "character_json_modal") {
+      if (interaction.isModalSubmit() && interaction.customId === "character_modal") {
         await handleCharacterModal(interaction);
         return;
       }

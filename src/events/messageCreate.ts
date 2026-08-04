@@ -2,6 +2,7 @@ import type { Client, TextChannel } from "discord.js";
 import { Events } from "discord.js";
 import { findByName } from "../store/cache.js";
 import { getCurrentAvatarUrl } from "../store/channelStore.js";
+import { resolvePlaceholders } from "../store/placeholders.js";
 import { getChannelWebhook } from "../webhook/webhookManager.js";
 
 // 트리거 형식: 캐릭터이름> 대사내용
@@ -24,10 +25,11 @@ export function registerMessageEvent(client: Client) {
 
     const channel = message.channel as TextChannel;
     try {
+      const resolvedLine = resolvePlaceholders(record, line);
       const avatarURL = await getCurrentAvatarUrl(message.guild, record);
       const webhook = await getChannelWebhook(channel, client.user!.id);
       await message.delete().catch(() => {});
-      await webhook.send({ content: line, username: record.data.name, avatarURL });
+      await webhook.send({ content: resolvedLine, username: record.data.name, avatarURL });
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
       console.error(`[dialogue] 전송 실패 (캐릭터: ${key}): ${reason}`);
