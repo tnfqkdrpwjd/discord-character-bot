@@ -5,23 +5,42 @@ import {
   TextInputBuilder,
   TextInputStyle,
   FileUploadBuilder,
+  AttachmentBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ActionRowBuilder,
   ChatInputCommandInteraction,
+  AutocompleteInteraction,
   MessageFlags,
 } from "discord.js";
-import { getAllCharacters } from "../store/cache.js";
+import { getAllCharacters, findByName } from "../store/cache.js";
 import { deleteCharacter } from "../store/channelStore.js";
+import { respondWithCharacterNames } from "./autocomplete.js";
 
 export const characterCommand = new SlashCommandBuilder()
   .setName("캐릭터")
   .setDescription("캐릭터 데이터 관리")
-  .addSubcommand((sub) => sub.setName("등록").setDescription("JSON을 붙여넣거나 첨부해서 캐릭터를 등록/수정합니다"))
+  .addSubcommand((sub) => sub.setName("등록").setDescription("JSON을 붙여넣거나 첨부해서 새 캐릭터를 등록합니다"))
+  .addSubcommand((sub) =>
+    sub
+      .setName("수정")
+      .setDescription("기존 캐릭터 데이터를 모달로 열어 수정합니다")
+      .addStringOption((opt) => opt.setName("캐릭터").setDescription("수정할 캐릭터").setRequired(true).setAutocomplete(true))
+  )
   .addSubcommand((sub) => sub.setName("목록").setDescription("등록된 캐릭터 목록을 봅니다"))
   .addSubcommand((sub) =>
     sub
       .setName("삭제")
       .setDescription("캐릭터를 삭제합니다")
-      .addStringOption((opt) => opt.setName("이름").setDescription("삭제할 캐릭터 이름").setRequired(true))
+      .addStringOption((opt) => opt.setName("캐릭터").setDescription("삭제할 캐릭터").setRequired(true).setAutocomplete(true))
   );
+
+export async function handleCharacterAutocomplete(interaction: AutocompleteInteraction) {
+  const focused = interaction.options.getFocused(true);
+  if (focused.name === "캐릭터") {
+    await respondWithCharacterNames(interaction, focused.value);
+  }
+}
 
 export async function handleCharacterCommand(interaction: ChatInputCommandInteraction) {
   if (!interaction.guild) {
@@ -71,6 +90,37 @@ export async function handleCharacterCommand(interaction: ChatInputCommandIntera
     return;
   }
 
+  if (sub === "수정") {
+    const name = interaction.options.getString("캐릭터", true);
+    const record = findByName(interaction.guild.id, name);
+    if (!record) {
+      await interaction.reply({ content: `'${name}'을(를) 찾을 수 없습니다.`, flags: MessageFlags.Ephemeral });
+      return;
+    }
+    if (!record.data.permittedUserIds.includes(interaction.user.id)) {
+      await interaction.reply({ content: "이 캐릭터를 다룰 권한이 없습니다.", flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    const jsonAttachment = new AttachmentBuilder(
+      Buffer.from(JSON.stringify({ kind: "character", data: record.data }, null, 2), "utf-8"),
+      { name: "current.json" }
+    );
+
+    const editButton = new ButtonBuilder()
+      .setCustomId(`character_edit_open:${name}`)
+      .setLabel("수정하기")
+      .setStyle(ButtonStyle.Primary);
+
+    await interaction.reply({
+      content: `**${name}**의 현재 데이터입니다. 확인하신 뒤 아래 버튼을 눌러 수정 모달을 여세요.`,
+      files: [jsonAttachment],
+      components: [new ActionRowBuilder<ButtonBuilder>().addComponents(editButton)],
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
   if (sub === "목록") {
     const list = getAllCharacters(interaction.guild.id).filter((c) =>
       c.data.permittedUserIds.includes(interaction.user.id)
@@ -85,7 +135,7 @@ export async function handleCharacterCommand(interaction: ChatInputCommandIntera
   }
 
   if (sub === "삭제") {
-    const name = interaction.options.getString("이름", true);
+    const name = interaction.options.getString("캐릭터", true);
     const ok = await deleteCharacter(interaction.guild, name);
     await interaction.reply({
       content: ok ? `'${name}' 삭제 완료` : `'${name}'을(를) 찾을 수 없습니다.`,

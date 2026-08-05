@@ -46,10 +46,7 @@ export async function handlePaletteAutocomplete(interaction: AutocompleteInterac
       return;
     }
 
-    const lines = record.data.commands
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean);
+    const lines = record.data.commands; // 이미 배열로 저장되어 있음
 
     const query = focused.value.toLowerCase();
     const matches = lines
@@ -86,10 +83,7 @@ export async function handlePaletteCommand(interaction: ChatInputCommandInteract
   }
 
   const raw = interaction.options.getString("명령어", true);
-  const lines = record.data.commands
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean);
+  const lines = record.data.commands; // 이미 배열로 저장되어 있음
 
   // 자동완성으로 골랐다면 인덱스(숫자 문자열)가, 직접 타이핑해서 보냈다면 그 텍스트가 들어옴
   const index = Number(raw);

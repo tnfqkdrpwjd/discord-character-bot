@@ -84,14 +84,17 @@ export async function loadCacheForGuild(guild: Guild) {
 /**
  * 캐릭터를 새로 만들거나 기존 것을 수정합니다.
  * image를 주면 그걸로 프로필을 교체하고, 안 주면 기존에 있던 이미지를 그대로 유지합니다.
+ * previousName을 주면 그 이름의 기존 캐릭터를 찾아 덮어쓰고(이름 변경 포함), 캐시 키도 새 이름으로 옮깁니다.
  */
 export async function saveCharacter(
   guild: Guild,
   data: Character,
-  image?: { buffer: Buffer; fileName: string }
+  image?: { buffer: Buffer; fileName: string },
+  previousName?: string
 ) {
   const channel = await getOrCreateDataChannel(guild);
-  const existing = findByName(guild.id, data.name);
+  const lookupName = previousName ?? data.name;
+  const existing = findByName(guild.id, lookupName);
   const caption = `📎 캐릭터: ${data.name}`;
 
   const files: AttachmentBuilder[] = [toJsonAttachment(data)];
@@ -109,6 +112,7 @@ export async function saveCharacter(
   if (existing) {
     const msg = await channel.messages.fetch(existing.messageId);
     await msg.edit({ content: caption, files, attachments: [] });
+    if (previousName && previousName !== data.name) removeCache(guild.id, previousName);
     upsertCache(guild.id, data.name, msg.id, data);
     return existing.messageId;
   }

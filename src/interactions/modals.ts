@@ -30,11 +30,16 @@ async function resolveImage(interaction: ModalSubmitInteraction) {
   return { buffer, fileName: attachment.name };
 }
 
+const EDIT_MODAL_PREFIX = "character_edit_modal:";
+
 export async function handleCharacterModal(interaction: ModalSubmitInteraction) {
   if (!interaction.guild) {
     await interaction.reply({ content: "이 기능은 서버 안에서만 사용할 수 있습니다.", flags: MessageFlags.Ephemeral });
     return;
   }
+
+  const isEdit = interaction.customId.startsWith(EDIT_MODAL_PREFIX);
+  const originalName = isEdit ? interaction.customId.slice(EDIT_MODAL_PREFIX.length) : undefined;
 
   // 채널 조회/생성, 메시지 전송 등 3초를 넘길 수 있는 작업이 있어 먼저 defer 처리
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
@@ -65,7 +70,17 @@ export async function handleCharacterModal(interaction: ModalSubmitInteraction) 
   }
 
   const image = await resolveImage(interaction);
-  await saveCharacter(interaction.guild, result.data, image);
+  await saveCharacter(interaction.guild, result.data, image, originalName);
+
+  if (isEdit) {
+    const renamed = originalName && originalName !== result.data.name;
+    await interaction.editReply({
+      content: `${renamed ? `'${originalName}' → '${result.data.name}'` : `'${result.data.name}'`} 수정 완료${
+        image ? " (이미지 변경)" : ""
+      }`,
+    });
+    return;
+  }
 
   const row = new ActionRowBuilder<UserSelectMenuBuilder>().addComponents(
     new UserSelectMenuBuilder()
