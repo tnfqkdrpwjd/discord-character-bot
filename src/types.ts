@@ -1,5 +1,5 @@
 export type CharacterClipboardData = {
-  kind: "character";
+  kind: 'character';
   data: Partial<Character>;
 };
 
@@ -21,4 +21,16 @@ export type Character = {
 export type CharacterRecord = {
   messageId: string;
   data: Character;
+};
+
+//게임시스템 저장
+export interface GameSystem {
+  id: string;
+  name: string;
+  sort_key: string;
+}
+
+//서버설정 저장
+export type GuildConfig = {
+  diceSystemId?: string;
 };

@@ -131,6 +131,14 @@ src/
 - 캐릭터 데이터는 각 서버의 `DATA_CHANNEL_NAME` 채널에 캐릭터당 메시지 1개(JSON + 이미지 첨부파일)로 저장됩니다.
 - 이미지 없이 등록해도 되고, 나중에 수정할 때 이미지를 첨부 안 하면 기존 이미지가 유지됩니다.
 
-## 추가하기
+## 봇 설치
 
 https://discord.com/oauth2/authorize?client_id=1483843652936536204&permissions=805415952&integration_type=0&scope=applications.commands+bot
+
+## Acknowledgements
+
+The dice rolling functionality in this project is powered by **BCDice**.
+
+BCDice is developed by **Faceless** and **たいたい竹流** and distributed under the **BSD 3-Clause License**.
+
+Project: https://github.com/bcdice/BCDice
