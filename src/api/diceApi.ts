@@ -43,16 +43,18 @@ export async function rollDice(
   gameSystemId: string,
   command: string,
 ): Promise<DiceRollResponse> {
+  const body = new URLSearchParams();
+
+  body.set("command", command);
+
   return requestApi<DiceRollResponse>(
     `/v2/game_system/${encodeURIComponent(gameSystemId)}/roll`,
     {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: JSON.stringify({
-        command,
-      }),
+      body,
     },
   );
 }
