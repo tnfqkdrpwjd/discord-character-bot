@@ -133,7 +133,8 @@ src/
 
 ## 봇 설치
 
-https://discord.com/oauth2/authorize?client_id=1483843652936536204&permissions=805415952&integration_type=0&scope=applications.commands+bot
+https://discord.com/oauth2/authorize?client_id=1483843652936536204
+링크로 들어가 원하는 서버에 넣으면 됩니다.
 
 ## Acknowledgements
 

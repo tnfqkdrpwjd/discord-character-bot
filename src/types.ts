@@ -32,5 +32,10 @@ export interface GameSystem {
 
 //서버설정 저장
 export type GuildConfig = {
-  diceSystemId?: string;
+  diceSystemId: string;
+};
+
+export type GuildConfigRecord = {
+  messageId: string;
+  data: GuildConfig;
 };
