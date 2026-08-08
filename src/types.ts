@@ -1,5 +1,5 @@
 export type CharacterClipboardData = {
-  kind: 'character';
+  kind: "character";
   data: Partial<Character>;
 };
 
@@ -30,9 +30,38 @@ export interface GameSystem {
   sort_key: string;
 }
 
+export type GameSystemDetail = {
+  ok: boolean;
+  id: string;
+  name: string;
+  sort_key: string;
+  command_pattern: string;
+  help_message: string;
+};
+
+// BCDice
+export type DiceRollResponse = {
+  ok: boolean;
+  text: string;
+  secret: boolean;
+  success: boolean | null;
+  failure: boolean | null;
+  critical: boolean | null;
+  fumble: boolean | null;
+  rands: DiceRand[];
+};
+
+export type DiceRand = {
+  kind: string;
+  sides: number;
+  value: number;
+};
+
 //서버설정 저장
 export type GuildConfig = {
+  diceSystemName: string;
   diceSystemId: string;
+  diceSystemHelp: string;
 };
 
 export type GuildConfigRecord = {

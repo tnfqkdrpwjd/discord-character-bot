@@ -1,22 +1,30 @@
 import type {
   CharacterRecord,
   Character,
-  guildConfigs,
+  GuildConfig,
   GuildConfigRecord,
-} from '../types.js';
+} from "../types.js";
 
 // guildId -> (캐릭터 name -> record)
 const guildCaches = new Map<string, Map<string, CharacterRecord>>();
+
+// guildId -> 서버 설정
 const guildConfigs = new Map<string, GuildConfigRecord>();
 
 function getGuildCache(guildId: string) {
   let cache = guildCaches.get(guildId);
+
   if (!cache) {
     cache = new Map();
     guildCaches.set(guildId, cache);
   }
+
   return cache;
 }
+
+// ====================
+// Character
+// ====================
 
 export function getAllCharacters(guildId: string): CharacterRecord[] {
   return [...getGuildCache(guildId).values()];
@@ -35,7 +43,10 @@ export function upsertCache(
   messageId: string,
   data: Character,
 ) {
-  getGuildCache(guildId).set(key, { messageId, data });
+  getGuildCache(guildId).set(key, {
+    messageId,
+    data,
+  });
 }
 
 export function removeCache(guildId: string, key: string) {
@@ -43,5 +54,28 @@ export function removeCache(guildId: string, key: string) {
 }
 
 export function clearGuildCache(guildId: string) {
-  getGuildCache(guildId).clear();
+  guildCaches.delete(guildId);
+}
+
+// ====================
+// Guild Config
+// ====================
+
+export function getGuildConfig(guildId: string): GuildConfigRecord | undefined {
+  return guildConfigs.get(guildId);
+}
+
+export function setGuildConfig(
+  guildId: string,
+  messageId: string,
+  data: GuildConfig,
+) {
+  guildConfigs.set(guildId, {
+    messageId,
+    data,
+  });
+}
+
+export function clearGuildConfig(guildId: string) {
+  guildConfigs.delete(guildId);
 }
