@@ -1,13 +1,13 @@
-import type { Guild, TextChannel, Message } from "discord.js";
+import type { Guild, TextChannel, Message } from 'discord.js';
 
 import {
   ChannelType,
   PermissionFlagsBits,
   AttachmentBuilder,
-} from "discord.js";
+} from 'discord.js';
 
-import { config } from "../config.js";
-import { CharacterSchema } from "../schema.js";
+import { config } from '../config.js';
+import { CharacterSchema } from '../schema.js';
 
 import {
   clearGuildCache,
@@ -18,17 +18,17 @@ import {
   getAllCharacters,
   setGuildConfig,
   getGuildConfig,
-} from "./cache.js";
+} from './cache.js';
 
-import type { Character, CharacterRecord, GuildConfig } from "../types.js";
+import type { Character, CharacterRecord, GuildConfig } from '../types.js';
 
 // ====================
 // Attachment
 // ====================
 
-const JSON_ATTACHMENT_NAME = "character.json";
-const AVATAR_ATTACHMENT_PREFIX = "avatar";
-const GUILD_CONFIG_ATTACHMENT_NAME = "guild-config.json";
+const JSON_ATTACHMENT_NAME = 'character.json';
+const AVATAR_ATTACHMENT_PREFIX = 'avatar';
+const GUILD_CONFIG_ATTACHMENT_NAME = 'guild-config.json';
 
 // ====================
 // Data Channel
@@ -61,7 +61,7 @@ export async function getOrCreateDataChannel(
       })
       .catch((err) =>
         console.warn(
-          "[channel] 봇 권한 보정 실패:",
+          '[channel] 봇 권한 보정 실패:',
           err instanceof Error ? err.message : err,
         ),
       );
@@ -78,7 +78,7 @@ export async function getOrCreateDataChannel(
     type: ChannelType.GuildText,
 
     topic:
-      "캐릭터 및 서버 설정 데이터 저장 전용 채널입니다. 봇이 자동 관리하니 직접 수정/삭제하지 마세요.",
+      '캐릭터 및 서버 설정 데이터 저장 전용 채널입니다. 봇이 자동 관리하니 직접 수정/삭제하지 마세요.',
 
     permissionOverwrites: [
       {
@@ -114,15 +114,15 @@ export async function getOrCreateDataChannel(
 function toJsonAttachment(data: Character) {
   const json = JSON.stringify(data, null, 2);
 
-  return new AttachmentBuilder(Buffer.from(json, "utf-8"), {
+  return new AttachmentBuilder(Buffer.from(json, 'utf-8'), {
     name: JSON_ATTACHMENT_NAME,
   });
 }
 
 function extFromFileName(fileName: string | undefined) {
-  const ext = fileName?.split(".").pop();
+  const ext = fileName?.split('.').pop();
 
-  return ext && ext.length <= 5 ? ext : "png";
+  return ext && ext.length <= 5 ? ext : 'png';
 }
 
 async function readCharacterFromMessage(
@@ -138,7 +138,6 @@ async function readCharacterFromMessage(
 
   try {
     const res = await fetch(attachment.url);
-
     const text = await res.text();
 
     return CharacterSchema.parse(JSON.parse(text));
@@ -327,7 +326,7 @@ export async function getCurrentAvatarUrl(
 function toGuildConfigAttachment(data: GuildConfig) {
   const json = JSON.stringify(data, null, 2);
 
-  return new AttachmentBuilder(Buffer.from(json, "utf-8"), {
+  return new AttachmentBuilder(Buffer.from(json, 'utf-8'), {
     name: GUILD_CONFIG_ATTACHMENT_NAME,
   });
 }
@@ -342,7 +341,7 @@ export async function saveGuildConfig(guild: Guild, data: GuildConfig) {
 
   const files = [toGuildConfigAttachment(data)];
 
-  const content = "서버 설정";
+  const content = '서버 설정';
 
   if (existing) {
     const msg = await channel.messages.fetch(existing.messageId);
@@ -390,19 +389,20 @@ async function readGuildConfigFromMessage(
     const data = JSON.parse(text);
 
     if (
-      typeof data !== "object" ||
+      typeof data !== 'object' ||
       data === null ||
-      typeof data.diceSystemName !== "string" ||
-      typeof data.diceSystemId !== "string" ||
-      typeof data.diceSystemHelp !== "string"
+      typeof data.diceSystemName !== 'string' ||
+      typeof data.diceSystemId !== 'string' ||
+      typeof data.diceSystemHelp !== 'string' ||
+      typeof data.diceSystemCommandPattern !== 'string'
     ) {
-      throw new Error("GuildConfig 형식이 올바르지 않습니다.");
+      throw new Error('GuildConfig 형식이 올바르지 않습니다.');
     }
 
     return data as GuildConfig;
   } catch (err) {
     console.warn(
-      `[cache] 서버 설정 파싱 실패:`,
+      '[cache] 서버 설정 파싱 실패:',
       err instanceof Error ? err.message : err,
     );
 

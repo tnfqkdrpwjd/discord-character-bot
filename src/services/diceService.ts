@@ -1,87 +1,81 @@
-import { rollDice } from "../api/diceApi.js";
-import { getGuildConfig } from "../store/cache.js";
+import { rollDice } from '../api/diceApi.js';
+import type { GuildConfig } from '../types.js';
 
 /**
- * 팔레트 문장에서 첫 번째 공백까지를
- * BCDice 명령어로 사용합니다.
+ * 팔레트 한 줄에서
  *
- * 예:
+ *   "CC<=70 성공한다!"
  *
- * "CC<=70 성공 관찰한다!"
+ * 를
  *
- * command:
- * "CC<=70"
+ *   command = "CC<=70"
+ *   text = "성공한다!"
  *
- * message:
- * "성공 관찰한다!"
+ * 로 분리합니다.
+ *
+ * 첫 번째 공백을 기준으로 나눕니다.
  */
-function splitDiceCommand(text: string) {
-  const trimmed = text.trim();
+function splitDiceCommand(line: string): {
+  command: string;
+  text: string;
+} {
+  const trimmed = line.trim();
 
-  if (!trimmed) {
-    return null;
-  }
+  const spaceIndex = trimmed.indexOf(' ');
 
-  const spaceIndex = trimmed.search(/\s/);
-
+  // 공백이 없다면 전체를 주사위 명령어로 취급
   if (spaceIndex === -1) {
     return {
       command: trimmed,
-      message: "",
+      text: '',
     };
   }
 
   return {
     command: trimmed.slice(0, spaceIndex),
-    message: trimmed.slice(spaceIndex + 1),
+    text: trimmed.slice(spaceIndex + 1),
   };
 }
 
 /**
- * 팔레트 문장을 BCDice로 처리합니다.
+ * 팔레트 한 줄을 BCDice로 처리합니다.
  *
  * 예:
  *
- * 입력:
- * CC<=70 성공 관찰한다!
+ * "CC<=70 성공 관찰한다!"
  *
- * 출력:
- * CC<=70 성공 관찰한다!  CC<=70 ＞ 43 ＞ 成功
+ * ↓
  *
- * 다이스 명령으로 판단할 수 없거나
- * 다이스 설정이 되어 있지 않으면
- * 원본 문장을 그대로 반환합니다.
+ * BCDice:
+ * CC<=70
+ *
+ * ↓
+ *
+ * "CC<=70 ＞ 43 ＞ 성공"
+ *
+ * 최종:
+ *
+ * "CC<=70 ＞ 43 ＞ 성공 관찰한다!"
  */
 export async function processDiceCommand(
-  guildId: string,
-  text: string,
+  line: string,
+  guildConfig: GuildConfig,
 ): Promise<string> {
-  const config = getGuildConfig(guildId);
+  const { command, text } = splitDiceCommand(line);
 
-  if (!config) {
-    return text;
+  if (!command) {
+    throw new Error('주사위 명령어가 없습니다.');
   }
 
-  const parsed = splitDiceCommand(text);
+  const result = await rollDice(guildConfig.diceSystemId, command);
 
-  if (!parsed) {
-    return text;
+  if (!result.ok) {
+    throw new Error('주사위 처리에 실패했습니다.');
   }
 
-  try {
-    const result = await rollDice(config.data.diceSystemId, parsed.command);
-
-    if (!result.ok) {
-      return text;
-    }
-
-    return `${text}  ${result.text}`;
-  } catch (err) {
-    console.warn(
-      "[dice] 주사위 처리 실패:",
-      err instanceof Error ? err.message : err,
-    );
-
-    return text;
+  if (!text) {
+    return result.text;
   }
+
+  return `${result.text} ${text}`;
 }

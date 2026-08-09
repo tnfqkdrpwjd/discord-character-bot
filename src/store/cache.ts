@@ -3,13 +3,25 @@ import type {
   Character,
   GuildConfig,
   GuildConfigRecord,
-} from "../types.js";
+} from '../types.js';
 
+// ========================================
+// Character Cache
 // guildId -> (캐릭터 name -> record)
+// ========================================
+
 const guildCaches = new Map<string, Map<string, CharacterRecord>>();
 
+// ========================================
+// Guild Config Cache
 // guildId -> 서버 설정
+// ========================================
+
 const guildConfigs = new Map<string, GuildConfigRecord>();
+
+// ========================================
+// Character Cache
+// ========================================
 
 function getGuildCache(guildId: string) {
   let cache = guildCaches.get(guildId);
@@ -21,10 +33,6 @@ function getGuildCache(guildId: string) {
 
   return cache;
 }
-
-// ====================
-// Character
-// ====================
 
 export function getAllCharacters(guildId: string): CharacterRecord[] {
   return [...getGuildCache(guildId).values()];
@@ -57,9 +65,9 @@ export function clearGuildCache(guildId: string) {
   guildCaches.delete(guildId);
 }
 
-// ====================
-// Guild Config
-// ====================
+// ========================================
+// Guild Config Cache
+// ========================================
 
 export function getGuildConfig(guildId: string): GuildConfigRecord | undefined {
   return guildConfigs.get(guildId);

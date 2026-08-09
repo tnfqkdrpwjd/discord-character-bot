@@ -7,6 +7,7 @@ import {
 } from "discord.js";
 
 import { findByName } from "../store/cache.js";
+import { getGuildConfig } from "../store/cache.js";
 import { getCurrentAvatarUrl } from "../store/channelStore.js";
 import { resolvePlaceholders } from "../store/placeholders.js";
 import { getChannelWebhook } from "../webhook/webhookManager.js";
@@ -41,11 +42,13 @@ export async function handlePaletteAutocomplete(
 
   const focused = interaction.options.getFocused(true);
 
+  // 캐릭터 자동완성
   if (focused.name === "캐릭터") {
     await respondWithCharacterNames(interaction, focused.value);
     return;
   }
 
+  // 팔레트 명령어 자동완성
   if (focused.name === "명령어") {
     const charName = interaction.options.getString("캐릭터");
 
@@ -59,7 +62,6 @@ export async function handlePaletteAutocomplete(
     }
 
     const lines = record.data.commands;
-
     const query = focused.value.toLowerCase();
 
     const matches = lines
@@ -74,8 +76,7 @@ export async function handlePaletteAutocomplete(
       matches.map(({ line, index }) => ({
         name: line.length > 100 ? line.slice(0, 97) + "..." : line,
 
-        // 자동완성에서는 실제 명령어 대신
-        // 배열의 인덱스를 전달합니다.
+        // 실제 명령어 대신 배열 인덱스를 전달
         value: String(index),
       })),
     );
@@ -96,6 +97,10 @@ export async function handlePaletteCommand(
     return;
   }
 
+  // ====================
+  // 캐릭터 확인
+  // ====================
+
   const name = interaction.options.getString("캐릭터", true);
 
   const record = findByName(interaction.guild.id, name);
@@ -109,6 +114,10 @@ export async function handlePaletteCommand(
     return;
   }
 
+  // ====================
+  // 권한 확인
+  // ====================
+
   if (!record.data.permittedUserIds.includes(interaction.user.id)) {
     await interaction.reply({
       content: "이 캐릭터를 다룰 권한이 없습니다.",
@@ -118,26 +127,71 @@ export async function handlePaletteCommand(
     return;
   }
 
+  // ====================
+  // 팔레트 명령어 가져오기
+  // ====================
+
   const raw = interaction.options.getString("명령어", true);
 
   const lines = record.data.commands;
 
-  // 자동완성으로 선택했다면 인덱스가 들어오고,
-  // 직접 입력했다면 입력한 텍스트가 들어옵니다.
+  // 자동완성으로 선택했다면 인덱스가 들어옵니다.
+  // 직접 입력했다면 입력한 문자열을 그대로 사용합니다.
   const index = Number(raw);
 
   const line =
     Number.isInteger(index) && lines[index] !== undefined ? lines[index] : raw;
 
-  // {HP}, {기1} 등의 플레이스홀더를 먼저 치환합니다.
+  // ====================
+  // 플레이스홀더 치환
+  // ====================
+
   const resolvedLine = resolvePlaceholders(record, line);
 
-  // 맨 앞의 다이스 명령을 BCDice로 굴리고
-  // 원본 문장 뒤에 결과를 붙입니다.
-  const finalLine = await processDiceCommand(
-    interaction.guild.id,
-    resolvedLine,
-  );
+  // ====================
+  // BCDice 처리
+  // ====================
+
+  // 팔레트의 맨 앞이 주사위 명령어라면
+  // BCDice를 호출하고 결과를 원본 문장 뒤에 붙입니다.
+  //
+  // 예:
+  // "CC<=70 관찰"
+  //
+  // ↓
+  //
+  // "CC<=70 관찰 CC<=70 ＞ 43 ＞ 성공 "
+  // ====================
+  // BCDice 처리
+  // ====================
+
+  const guildConfig = getGuildConfig(interaction.guild.id);
+
+  let finalLine = resolvedLine;
+
+  if (guildConfig) {
+    try {
+      finalLine = await processDiceCommand(resolvedLine, guildConfig.data);
+    } catch (err) {
+      // 다이스 처리 실패해도 원본 문장은 그대로 전송
+      console.error("다이스 처리 실패:", err);
+      finalLine = resolvedLine;
+    }
+  }
+
+  try {
+    finalLine = await processDiceCommand(resolvedLine, guildConfig.data);
+  } catch (err) {
+    await interaction.reply({
+      content: `다이스 처리 실패: ${err instanceof Error ? err.message : String(err)}`,
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  // ====================
+  // Webhook 전송
+  // ====================
 
   const channel = interaction.channel as TextChannel;
 
@@ -152,7 +206,8 @@ export async function handlePaletteCommand(
   });
 
   await interaction.reply({
-    content: "전송했습니다.",
-    flags: MessageFlags.Ephemeral,
+    //전송 완료 메세지
+    // content: '전송했습니다.',
+    // flags: MessageFlags.Ephemeral,
   });
 }

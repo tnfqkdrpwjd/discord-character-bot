@@ -1,5 +1,5 @@
 export type CharacterClipboardData = {
-  kind: "character";
+  kind: 'character';
   data: Partial<Character>;
 };
 
@@ -44,11 +44,19 @@ export type DiceRollResponse = {
   ok: boolean;
   text: string;
   secret: boolean;
-  success: boolean | null;
-  failure: boolean | null;
-  critical: boolean | null;
-  fumble: boolean | null;
-  rands: DiceRand[];
+  success: boolean;
+  failure: boolean;
+  critical: boolean;
+  fumble: boolean;
+  rands: {
+    kind: string;
+    sides: number;
+    value: number;
+  }[];
+};
+
+export type GameSystemResponse = {
+  game_system: GameSystem[];
 };
 
 export type DiceRand = {
@@ -59,9 +67,10 @@ export type DiceRand = {
 
 //서버설정 저장
 export type GuildConfig = {
-  diceSystemName: string;
   diceSystemId: string;
+  diceSystemName: string;
   diceSystemHelp: string;
+  diceSystemCommandPattern: string;
 };
 
 export type GuildConfigRecord = {
