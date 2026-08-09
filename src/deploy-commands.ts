@@ -1,10 +1,10 @@
-import { REST, Routes } from "discord.js";
-import { config } from "./config.js";
-import { characterCommand } from "./commands/character.js";
-import { paletteCommand } from "./commands/palette.js";
-import { sayCommand } from "./commands/say.js";
-import { statCommand } from "./commands/stat.js";
-import { diceCommand } from "./commands/dice.js";
+import { REST, Routes } from 'discord.js';
+import { config } from './config.js';
+import { characterCommand } from './commands/character.js';
+import { paletteCommand } from './commands/palette.js';
+import { sayCommand } from './commands/say.js';
+import { statCommand } from './commands/stat.js';
+import { diceCommand } from './commands/dice.js';
 
 const commands = [
   characterCommand.toJSON(),
@@ -16,7 +16,7 @@ const commands = [
 const rest = new REST().setToken(config.token);
 
 (async () => {
-  console.log("슬래시 커맨드 등록 중...");
+  console.log('슬래시 커맨드 등록 중...');
   if (config.guildId) {
     await rest.put(
       Routes.applicationGuildCommands(config.clientId, config.guildId),
@@ -28,7 +28,7 @@ const rest = new REST().setToken(config.token);
       body: commands,
     });
     console.log(
-      "전역 등록 완료 (모든 서버 반영까지 최대 1시간 소요될 수 있음)",
+      '전역 등록 완료 (모든 서버 반영까지 최대 1시간 소요될 수 있음)',
     );
   }
 })();

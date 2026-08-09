@@ -4,30 +4,30 @@ import {
   AutocompleteInteraction,
   TextChannel,
   MessageFlags,
-} from "discord.js";
+} from 'discord.js';
 
-import { findByName } from "../store/cache.js";
-import { getGuildConfig } from "../store/cache.js";
-import { getCurrentAvatarUrl } from "../store/channelStore.js";
-import { resolvePlaceholders } from "../store/placeholders.js";
-import { getChannelWebhook } from "../webhook/webhookManager.js";
-import { respondWithCharacterNames } from "./autocomplete.js";
-import { processDiceCommand } from "../services/diceService.js";
+import { findByName } from '../store/cache.js';
+import { getGuildConfig } from '../store/cache.js';
+import { getCurrentAvatarUrl } from '../store/channelStore.js';
+import { resolvePlaceholders } from '../store/placeholders.js';
+import { getChannelWebhook } from '../webhook/webhookManager.js';
+import { respondWithCharacterNames } from './autocomplete.js';
+import { processDiceCommand } from '../services/diceService.js';
 
 export const paletteCommand = new SlashCommandBuilder()
-  .setName("팔레트")
-  .setDescription("캐릭터의 채팅 팔레트를 불러와 바로 전송합니다")
+  .setName('팔레트')
+  .setDescription('캐릭터의 채팅 팔레트를 불러와 바로 전송합니다')
   .addStringOption((opt) =>
     opt
-      .setName("캐릭터")
-      .setDescription("팔레트를 불러올 캐릭터")
+      .setName('캐릭터')
+      .setDescription('팔레트를 불러올 캐릭터')
       .setRequired(true)
       .setAutocomplete(true),
   )
   .addStringOption((opt) =>
     opt
-      .setName("명령어")
-      .setDescription("보낼 팔레트 항목 (입력하면서 검색됩니다)")
+      .setName('명령어')
+      .setDescription('보낼 팔레트 항목 (입력하면서 검색됩니다)')
       .setRequired(true)
       .setAutocomplete(true),
   );
@@ -43,14 +43,14 @@ export async function handlePaletteAutocomplete(
   const focused = interaction.options.getFocused(true);
 
   // 캐릭터 자동완성
-  if (focused.name === "캐릭터") {
+  if (focused.name === '캐릭터') {
     await respondWithCharacterNames(interaction, focused.value);
     return;
   }
 
   // 팔레트 명령어 자동완성
-  if (focused.name === "명령어") {
-    const charName = interaction.options.getString("캐릭터");
+  if (focused.name === '명령어') {
+    const charName = interaction.options.getString('캐릭터');
 
     const record = charName
       ? findByName(interaction.guild.id, charName)
@@ -74,7 +74,7 @@ export async function handlePaletteAutocomplete(
 
     await interaction.respond(
       matches.map(({ line, index }) => ({
-        name: line.length > 100 ? line.slice(0, 97) + "..." : line,
+        name: line.length > 100 ? line.slice(0, 97) + '...' : line,
 
         // 실제 명령어 대신 배열 인덱스를 전달
         value: String(index),
@@ -90,7 +90,7 @@ export async function handlePaletteCommand(
 ) {
   if (!interaction.guild || !interaction.channel) {
     await interaction.reply({
-      content: "이 명령어는 서버 안에서만 사용할 수 있습니다.",
+      content: '이 명령어는 서버 안에서만 사용할 수 있습니다.',
       flags: MessageFlags.Ephemeral,
     });
 
@@ -101,7 +101,7 @@ export async function handlePaletteCommand(
   // 캐릭터 확인
   // ====================
 
-  const name = interaction.options.getString("캐릭터", true);
+  const name = interaction.options.getString('캐릭터', true);
 
   const record = findByName(interaction.guild.id, name);
 
@@ -120,18 +120,21 @@ export async function handlePaletteCommand(
 
   if (!record.data.permittedUserIds.includes(interaction.user.id)) {
     await interaction.reply({
-      content: "이 캐릭터를 다룰 권한이 없습니다.",
+      content: '이 캐릭터를 다룰 권한이 없습니다.',
       flags: MessageFlags.Ephemeral,
     });
 
     return;
   }
 
+  // 다이스 API 호출 등 3초를 넘길 수 있는 작업이 있어 먼저 defer 처리
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
   // ====================
   // 팔레트 명령어 가져오기
   // ====================
 
-  const raw = interaction.options.getString("명령어", true);
+  const raw = interaction.options.getString('명령어', true);
 
   const lines = record.data.commands;
 
@@ -154,39 +157,23 @@ export async function handlePaletteCommand(
 
   // 팔레트의 맨 앞이 주사위 명령어라면
   // BCDice를 호출하고 결과를 원본 문장 뒤에 붙입니다.
-  //
-  // 예:
-  // "CC<=70 관찰"
-  //
-  // ↓
-  //
-  // "CC<=70 관찰 CC<=70 ＞ 43 ＞ 성공 "
-  // ====================
-  // BCDice 처리
-  // ====================
-
+  // 다이스 시스템이 설정 안 되어 있거나, 다이스 명령어가 아니면 원문 그대로 보냅니다.
   const guildConfig = getGuildConfig(interaction.guild.id);
 
   let finalLine = resolvedLine;
-
   if (guildConfig) {
     try {
       finalLine = await processDiceCommand(resolvedLine, guildConfig.data);
     } catch (err) {
-      // 다이스 처리 실패해도 원본 문장은 그대로 전송
-      console.error("다이스 처리 실패:", err);
-      finalLine = resolvedLine;
+      console.error(
+        `[dice] 팔레트 처리 실패 (캐릭터: ${name}, 원문: ${resolvedLine}):`,
+        err,
+      );
+      await interaction.editReply({
+        content: `다이스 처리 실패: ${err instanceof Error ? err.message : String(err)}`,
+      });
+      return;
     }
-  }
-
-  try {
-    finalLine = await processDiceCommand(resolvedLine, guildConfig.data);
-  } catch (err) {
-    await interaction.reply({
-      content: `다이스 처리 실패: ${err instanceof Error ? err.message : String(err)}`,
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
   }
 
   // ====================
@@ -205,9 +192,7 @@ export async function handlePaletteCommand(
     avatarURL,
   });
 
-  await interaction.reply({
-    //전송 완료 메세지
-    // content: '전송했습니다.',
-    // flags: MessageFlags.Ephemeral,
+  await interaction.editReply({
+    content: '전송했습니다.',
   });
 }

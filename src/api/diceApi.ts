@@ -40,7 +40,9 @@ export async function getGameSystems(): Promise<GameSystem[]> {
  * /v2/game_system/{id}
  */
 export async function getGameSystem(id: string): Promise<GameSystemDetail> {
-  return requestApi<GameSystemDetail>(`/v2/game_system/${encodeURIComponent(id)}`);
+  return requestApi<GameSystemDetail>(
+    `/v2/game_system/${encodeURIComponent(id)}`,
+  );
 }
 
 // ========================================
@@ -62,12 +64,10 @@ export async function rollDice(
       method: 'POST',
 
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
 
-      body: JSON.stringify({
-        command,
-      }),
+      body: new URLSearchParams({ command }).toString(),
     },
   );
 }

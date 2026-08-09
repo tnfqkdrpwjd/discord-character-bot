@@ -143,3 +143,6 @@ The dice rolling functionality in this project is powered by **BCDice**.
 BCDice is developed by **Faceless** and **たいたい竹流** and distributed under the **BSD 3-Clause License**.
 
 Project: https://github.com/bcdice/BCDice
+
+전역 지우기
+npx tsx src/clear-commands.ts

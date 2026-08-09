@@ -170,10 +170,22 @@ export async function loadCacheForGuild(guild: Guild) {
   });
 
   for (const msg of messages.values()) {
-    const guildConfig = await readGuildConfigFromMessage(msg);
+    const hasGuildConfigAttachment = msg.attachments.some(
+      (a) => a.name === GUILD_CONFIG_ATTACHMENT_NAME,
+    );
 
-    if (guildConfig) {
-      setGuildConfig(guild.id, msg.id, guildConfig);
+    if (hasGuildConfigAttachment) {
+      const guildConfig = await readGuildConfigFromMessage(msg);
+
+      if (guildConfig) {
+        setGuildConfig(guild.id, msg.id, guildConfig);
+      } else {
+        // 예전 버전으로 저장되어 필드가 빠졌거나 손상된 설정 메시지 - 계속 실패하지 않도록 자동 삭제
+        console.warn(
+          `[cache] 손상된 서버 설정 메시지(${msg.id})를 삭제합니다. '/다이스'로 다시 설정해주세요.`,
+        );
+        await msg.delete().catch(() => {});
+      }
 
       continue;
     }
